@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Income Calculator with Voice Input</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #825CFF;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            animation: fadeInUp 0.5s ease-in-out;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-group {
+            width: 100%;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .input-field {
+            position: relative;
+            width: 100%;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #825CFF;
+        }
+
+        .input-field i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #825CFF;
+            font-size: 18px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 30px;
+            border: 2px solid #e0e0e0;
+            font-size: 16px;
+        }
+
+        button {
+            font-family: 'Poppins', sans-serif;
+            padding: 12px 30px;
+            font-size: 16px;
+            background-color: #825CFF;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(116, 235, 213, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background-color: #6334fd;
+        }
+
+        h2 {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        .voice-btn {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #825CFF;
+            font-size: 18px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            input {
+                padding: 10px 10px 10px 35px;
+            }
+
+            button {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-calculator"></i> Income Calculator</h1>
+        <div class="calculator">
+            <!-- Country Selection -->
+            <div class="input-group">
+                <label for="country">Select Country:</label>
+                <div class="input-field">
+                    <select id="country" onchange="updateCurrency()">
+                        <option value="INR" selected>India (₹)</option>
+                        <option value="USD">USA ($)</option>
+                        <option value="EUR">Europe (€)</option>
+                        <option value="GBP">UK (£)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Hourly Rate Input with Voice -->
+            <div class="input-group">
+                <label for="hourly-rate">Hourly Rate:</label>
+                <div class="input-field">
+                    <i class="fas fa-dollar-sign" id="currency-symbol"></i>
+                    <input type="number" id="hourly-rate" placeholder="Enter hourly rate">
+                    <button class="voice-btn" onclick="startRecognition('hourly-rate')">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hours Worked per Day with Voice -->
+            <div class="input-group">
+                <label for="hours-per-day">Hours Worked per Day:</label>
+                <div class="input-field">
+                    <i class="fas fa-clock"></i>
+                    <input type="number" id="hours-per-day" placeholder="Enter hours worked per day">
+                    <button class="voice-btn" onclick="startRecognition('hours-per-day')">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calculate Button -->
+            <button onclick="calculateIncome()"><i class="fas fa-calculator"></i> Calculate</button>
+
+            <!-- Results -->
+            <h2>Daily Income: <span id="daily-income">0.00</span></h2>
+            <h2>Monthly Income: <span id="monthly-income">0.00</span></h2>
+            <h2>Yearly Income: <span id="yearly-income">0.00</span></h2>
+        </div>
+    </div>
+
+    <script>
+        // Web Speech API - Speech Recognition
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        // Function to start voice recognition and fill the input
+        function startRecognition(inputId) {
+            recognition.start();
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById(inputId).value = transcript;
+            };
+        }
+
+        // Function to update the currency symbol based on selected country
+        function updateCurrency() {
+            const country = document.getElementById('country').value;
+            const currencySymbol = document.getElementById('currency-symbol');
+
+            switch (country) {
+                case 'INR':
+                    currencySymbol.className = 'fas fa-rupee-sign';
+                    break;
+                case 'USD':
+                    currencySymbol.className = 'fas fa-dollar-sign';
+                    break;
+                case 'EUR':
+                    currencySymbol.className = 'fas fa-euro-sign';
+                    break;
+                case 'GBP':
+                    currencySymbol.className = 'fas fa-pound-sign';
+                    break;
+                default:
+                    currencySymbol.className = 'fas fa-dollar-sign';
+            }
+        }
+
+        // Function to calculate income
+        function calculateIncome() {
+            const hourlyRate = document.getElementById('hourly-rate').value;
+            const hoursPerDay = document.getElementById('hours-per-day').value;
+            const country = document.getElementById('country').value;
+
+            if (hourlyRate && hoursPerDay) {
+                const dailyIncome = (hourlyRate * hoursPerDay).toFixed(2);
+                const monthlyIncome = (dailyIncome * 22).toFixed(2); // Assuming 22 working days in a month
+                const yearlyIncome = (monthlyIncome * 12).toFixed(2);
+
+                const symbol = getCurrencySymbol(country);
+
+                document.getElementById('daily-income').textContent = `${symbol}${dailyIncome}`;
+                document.getElementById('monthly-income').textContent = `${symbol}${monthlyIncome}`;
+                document.getElementById('yearly-income').textContent = `${symbol}${yearlyIncome}`;
+            }
+        }
+
+        // Function to get the currency symbol based on country
+        function getCurrencySymbol(country) {
+            switch (country) {
+                case 'INR':
+                    return '₹';
+                case 'USD':
+                    return '$';
+                case 'EUR':
+                    return '€';
+                case 'GBP':
+                    return '£';
+                default:
+                    return '$';
+            }
+        }
+    </script>
+</body>
+</html>
